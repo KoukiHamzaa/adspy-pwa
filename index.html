@@ -949,6 +949,17 @@ function startManualAnalysis() {
 }
 
 // -------------------------------------------------------------------
+// Helper: make absolute URL
+// -------------------------------------------------------------------
+function absoluteURL(base, relative) {
+  try {
+    return new URL(relative, base).href;
+  } catch {
+    return null;
+  }
+}
+
+// -------------------------------------------------------------------
 // AI Provider Router
 // -------------------------------------------------------------------
 async function fetchHtmlViaProxy(url) {
@@ -1048,7 +1059,6 @@ HTML: ${truncated}`;
       });
       if (!response.ok) throw new Error(`Anthropic error: ${response.status}`);
       data = await response.json();
-      // Anthropic returns content as array of text blocks
       const content = data.content[0].text;
       return JSON.parse(content.replace(/```json|```/g, '').trim());
 
@@ -1098,14 +1108,28 @@ HTML: ${truncated}`;
   }
 }
 
-// Wrapper for analyzeURL
+// -------------------------------------------------------------------
+// Wrapper for analyzeURL with image fallback
+// -------------------------------------------------------------------
 async function analyzeURL(url, fallbackTitle) {
   try {
     const ai = await analyzeWithAI(url, fallbackTitle);
+    
+    // Resolve image if relative
+    let image = ai.image_url;
+    if (image && !image.startsWith('http')) {
+      image = absoluteURL(url, image);
+    }
+    
+    // If still no image, use screenshot service
+    if (!image) {
+      image = `https://image.thum.io/get/width/400/crop/500/noanimate/${encodeURIComponent(url)}`;
+    }
+    
     return {
       url,
       title: ai.title || fallbackTitle,
-      image: ai.image_url || null,
+      image: image,
       price: ai.price || null,
       description: ai.description || 'Product from your AdSpy collection.',
       category: ai.category || 'other',
@@ -1114,10 +1138,12 @@ async function analyzeURL(url, fallbackTitle) {
     };
   } catch (err) {
     console.warn('AI analysis failed, using fallback', err);
+    // Fallback with screenshot
+    const fallbackImage = `https://image.thum.io/get/width/400/crop/500/noanimate/${encodeURIComponent(url)}`;
     return {
       url,
       title: fallbackTitle,
-      image: null,
+      image: fallbackImage,
       price: null,
       description: 'Could not analyze page.',
       category: 'other',
