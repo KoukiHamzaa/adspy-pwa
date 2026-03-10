@@ -1056,39 +1056,80 @@ async function beginAnalysis(links) {
   renderGallery();
 }
 
+// ─── REAL IMAGE FETCHING ─────────────────────────────────
+async function fetchRealImage(url) {
+  // 1. Try CORS proxy to extract og:image / twitter:image / first product img
+  try {
+    const proxyURL = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyURL, { signal: AbortSignal.timeout(8000) });
+    if (res.ok) {
+      const data = await res.json();
+      const html = data.contents || '';
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+
+      // Priority: og:image > twitter:image > first large img
+      const og = doc.querySelector('meta[property="og:image"]')?.content
+               || doc.querySelector('meta[name="og:image"]')?.content
+               || doc.querySelector('meta[name="twitter:image"]')?.content
+               || doc.querySelector('meta[property="twitter:image"]')?.content;
+
+      if (og && og.startsWith('http')) return og;
+
+      // Try first meaningful image in page
+      const imgs = Array.from(doc.querySelectorAll('img[src]'));
+      for (const img of imgs) {
+        const src = img.src || img.getAttribute('src') || '';
+        if (src.startsWith('http') && !src.includes('logo') && !src.includes('icon') && !src.includes('pixel') && src.length > 20) {
+          return src;
+        }
+      }
+    }
+  } catch (_) { /* proxy failed, fall through */ }
+
+  // 2. Fallback: thum.io free page screenshot
+  return `https://image.thum.io/get/width/400/crop/500/noanimate/${url}`;
+}
+
 async function analyzeURL(url, fallback) {
-  const prompt = `Analyze this product URL and return ONLY a JSON object, no markdown, no explanation:
+  // Run image fetch + Claude analysis in parallel for speed
+  const [imageResult, aiResult] = await Promise.allSettled([
+    fetchRealImage(url),
+    (async () => {
+      const prompt = `Analyze this product URL and return ONLY a JSON object, no markdown, no explanation:
 {
   "title": "short product name",
   "description": "2-3 sentence description of what this is and its appeal",
   "price": "price string like $29.99 or null",
   "category": "one of: fashion, beauty, tech, home, fitness, food, pets, hobby, other",
-  "image": "best guess product image URL or null",
   "emoji": "one relevant emoji"
 }
 URL: ${url}
 Bookmark title: ${fallback}
 Make smart inferences even if page is inaccessible. Always return valid JSON.`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 600,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const data = await res.json();
+      const text = data.content.map(b => b.text || '').join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      return JSON.parse(clean);
+    })()
+  ]);
 
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
-  const text = data.content.map(b => b.text || '').join('');
-  const clean = text.replace(/```json|```/g, '').trim();
-  try {
-    return { ...JSON.parse(clean), url, error: false };
-  } catch {
-    return { title: fallback, description: 'Product from your AdSpy collection.', price: null, category: 'other', emoji: '🛍️', url, error: false };
-  }
+  const ai = aiResult.status === 'fulfilled' ? aiResult.value
+    : { title: fallback, description: 'Product from your AdSpy collection.', price: null, category: 'other', emoji: '🛍️' };
+
+  const image = imageResult.status === 'fulfilled' ? imageResult.value : null;
+
+  return { ...ai, image, url, error: false };
 }
 
 // ─── GALLERY ─────────────────────────────────────────────
