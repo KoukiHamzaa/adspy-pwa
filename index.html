@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d14">
+<meta name="apple-mobile-web-app-title" content="AdSpy Gallery">
+<meta name="description" content="Turn Chrome bookmarks into a visual ad product gallery">
+
+<!-- PWA Manifest inline -->
+<script>
+const manifestData = {
+  name: "AdSpy Gallery",
+  short_name: "AdSpy",
+  description: "Turn Chrome bookmarks into a visual product gallery",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#0d0d14",
+  theme_color: "#0d0d14",
+  orientation: "portrait-primary",
+  icons: [
+    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%230d0d14'/><text y='130' x='28' font-size='120'>🎯</text></svg>", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230d0d14'/><text y='360' x='60' font-size='320'>🎯</text></svg>", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+document.write(`<link rel="manifest" href="${manifestURL}">`);
+</script>
+
+<title>AdSpy Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d14;
+  --surface: #14141f;
+  --surface2: #1e1e2e;
+  --surface3: #252538;
+  --border: #2e2e45;
+  --accent: #ff4d6d;
+  --accent2: #845ef7;
+  --teal: #20c997;
+  --amber: #ffd43b;
+  --text: #eeeef8;
+  --muted: #6c6c90;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html { height: 100%; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  min-height: 100%;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── INSTALL BANNER ─────────────────────────── */
+.install-banner {
+  position: fixed;
+  bottom: calc(16px + var(--safe-bottom));
+  left: 16px; right: 16px;
+  background: linear-gradient(135deg, #1e1e2e, #252538);
+  border: 1px solid var(--accent2);
+  border-radius: 16px;
+  padding: 16px;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(132, 94, 247, 0.3);
+  animation: slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.install-icon { font-size: 28px; flex-shrink: 0; }
+.install-text { flex: 1; }
+.install-text strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.install-text span { font-size: 12px; color: var(--muted); }
+.install-btn {
+  background: var(--accent2);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.install-dismiss {
+  background: none; border: none;
+  color: var(--muted); font-size: 18px;
+  cursor: pointer; padding: 4px;
+  flex-shrink: 0;
+}
+
+/* ── STATUS BAR SPACER ──────────────────────── */
+.status-bar { height: var(--safe-top); background: var(--bg); }
+
+/* ── TOP NAV ────────────────────────────────── */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(13,13,20,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.nav-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+}
+
+.nav-title {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.nav-title span { color: var(--accent); }
+
+.nav-right { display: flex; align-items: center; gap: 8px; }
+
+.nav-pill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 5px;
+}
+.nav-pill .n { color: var(--accent); font-weight: 600; }
+
+/* ── MAIN CONTENT ───────────────────────────── */
+.main { padding-bottom: calc(80px + var(--safe-bottom)); }
+
+/* ── IMPORT PAGE ────────────────────────────── */
+#page-import { display: block; }
+#page-progress { display: none; }
+#page-gallery { display: none; }
+
+.import-wrap {
+  padding: 32px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.hero {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(132,94,247,0.15);
+  border: 1px solid rgba(132,94,247,0.3);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: var(--accent2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.hero h1 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: clamp(26px, 7vw, 38px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+
+.hero h1 .hl {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* CARD STYLE */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* FILE PICKER AREA */
+.file-area {
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  active: true;
+}
+
+.file-area:active { background: var(--surface2); }
+
+.file-area .file-icon { font-size: 44px; margin-bottom: 12px; line-height: 1; }
+.file-area h3 { font-family: 'Clash Display', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.file-area p { font-size: 12px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+  -webkit-appearance: none;
+}
+
+.btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* URL MANUAL INPUT */
+.manual-section { padding: 20px; }
+.manual-section h4 {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.url-input-wrap { display: flex; gap: 8px; }
+.url-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.url-input:focus { border-color: var(--accent2); }
+.url-input::placeholder { color: var(--muted); }
+
+.btn-add {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.btn-add:active { background: var(--accent2); border-color: var(--accent2); }
+
+.url-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
+.url-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.url-chip .url-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.url-chip-remove {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 14px; flex-shrink: 0;
+  padding: 0 4px;
+}
+
+/* INSTRUCTIONS */
+.instructions { padding: 20px; }
+.instructions h4 {
+  font-size: 12px;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.step:last-child { margin-bottom: 0; }
+.step-num {
+  width: 22px; height: 22px;
+  background: var(--surface3);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.step-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.step-text strong { color: var(--text); font-weight: 500; }
+
+/* FOLDER PICKER CARD */
+.folder-card { padding: 20px; }
+.folder-card h4 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.folder-card .sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+
+.folder-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+}
+.folder-row:active { transform: scale(0.98); }
+.folder-row.selected { border-color: var(--accent); background: rgba(255,77,109,0.08); }
+
+.folder-emoji { font-size: 20px; flex-shrink: 0; }
+.folder-info { flex: 1; min-width: 0; }
+.folder-name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-count { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.folder-check { font-size: 18px; color: var(--accent); opacity: 0; transition: opacity 0.15s; }
+.folder-row.selected .folder-check { opacity: 1; }
+
+.btn-go {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600; font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-go:active { transform: scale(0.97); }
+.btn-go:disabled { opacity: 0.4; pointer-events: none; }
+
+/* ── PROGRESS PAGE ──────────────────────────── */
+.progress-wrap {
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.progress-header { text-align: center; }
+.progress-header h2 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.progress-header p { font-size: 13px; color: var(--muted); }
+
+.progress-card { padding: 20px; }
+
+.prog-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.prog-meta span { font-size: 13px; }
+.prog-meta .count { font-weight: 600; color: var(--accent); }
+
+.track {
+  background: var(--surface3);
+  border-radius: 99px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+
+.log-box {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 12px;
+  height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.log-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.log-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.log-dot.ok { background: var(--teal); }
+.log-dot.err { background: var(--accent); }
+.log-dot.run { background: var(--amber); animation: blink 0.8s infinite; }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
+/* ── GALLERY PAGE ───────────────────────────── */
+.gallery-header {
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.gallery-title { font-family: 'Clash Display', sans-serif; font-size: 20px; font-weight: 700; }
+.gallery-title .ct { font-family: 'Outfit', sans-serif; font-weight: 400; font-size: 13px; color: var(--muted); display: block; }
+
+.btn-reset {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-reset:active { background: var(--surface3); }
+
+/* FILTER CHIPS */
+.filter-strip {
+  padding: 0 20px 14px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filter-strip::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chip.active {
+  background: rgba(132,94,247,0.15);
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+
+/* GRID */
+.grid {
+  padding: 4px 12px 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 480px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 720px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* PRODUCT CARD */
+.pcard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: popIn 0.35s cubic-bezier(0.34,1.4,0.64,1) both;
+  -webkit-user-select: none;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.pcard:active { transform: scale(0.96); }
+
+.pcard-img {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.pcard-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.pcard-fallback {
+  font-size: 36px;
+  position: absolute;
+}
+.pcard-cat {
+  position: absolute;
+  bottom: 6px; left: 6px;
+  background: rgba(13,13,20,0.85);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-size: 9px;
+  color: var(--amber);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
+.pcard-body { padding: 10px 10px 12px; }
+.pcard-domain { font-size: 9px; color: var(--muted); margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard-title {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.pcard-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal);
+}
+.pcard-price:empty::after { content: '·'; color: var(--border); }
+
+/* ── BOTTOM SHEET MODAL ─────────────────────── */
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+.sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid var(--border);
+  padding: 0 0 calc(24px + var(--safe-bottom));
+  z-index: 501;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.sheet-overlay.open .sheet { transform: translateY(0); }
+
+.sheet-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+.sheet-img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 60px;
+  margin: 16px 0 0;
+}
+.sheet-img img { width: 100%; height: 100%; object-fit: cover; }
+.sheet-img-fallback { display: flex; align-items: center; justify-content: center; height: 180px; font-size: 60px; }
+
+.sheet-body { padding: 20px 20px 0; }
+.sheet-domain { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.sheet-title {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 14px;
+}
+
+.sheet-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.tag {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tag.price { color: var(--teal); border-color: rgba(32,201,151,0.3); background: rgba(32,201,151,0.05); }
+
+.sheet-desc { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+.sheet-url { font-size: 11px; color: var(--accent2); word-break: break-all; line-height: 1.5; margin-bottom: 20px; }
+
+.btn-visit {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none;
+  padding: 16px;
+  border-radius: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600; font-size: 16px;
+  cursor: pointer; text-decoration: none;
+}
+.btn-visit:active { opacity: 0.85; }
+
+/* EMPTY STATE */
+.empty { padding: 60px 20px; text-align: center; }
+.empty .e-icon { font-size: 48px; margin-bottom: 12px; }
+.empty h3 { font-family: 'Clash Display', sans-serif; font-size: 18px; margin-bottom: 6px; }
+.empty p { font-size: 13px; color: var(--muted); }
+
+/* SCROLLBARS */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <strong>Install AdSpy Gallery</strong>
+    <span>Add to home screen for app experience</span>
+  </div>
+  <button class="install-btn" id="install-btn">Install</button>
+  <button class="install-dismiss" id="install-dismiss">✕</button>
+</div>
+
+<div class="status-bar"></div>
+<div class="top-nav">
+  <div class="nav-logo">
+    <div class="nav-icon">🎯</div>
+    <div class="nav-title">Ad<span>Spy</span></div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-pill" id="nav-count" style="display:none">
+      <span class="n" id="nav-n">0</span>
+      <span>products</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── PAGE: IMPORT ── -->
+  <div id="page-import">
+    <div class="import-wrap">
+      <div class="hero">
+        <div class="hero-badge">🔥 AdSpy Tool</div>
+        <h1>Your winning ads,<br><span class="hl">as a gallery</span></h1>
+        <p>Import your saved Chrome bookmark folder and see every product page as a visual card you can tap and browse.</p>
+      </div>
+
+      <!-- FILE IMPORT -->
+      <div class="card">
+        <div class="file-area" id="file-area" onclick="document.getElementById('file-input').click()">
+          <div class="file-icon">📂</div>
+          <h3>Import Chrome Bookmarks</h3>
+          <p>Tap to pick your exported<br><strong>bookmarks_MM_DD_YY.html</strong> file</p>
+          <button class="btn-primary" onclick="event.stopPropagation(); document.getElementById('file-input').click()">
+            📁 Choose Bookmarks File
+          </button>
+          <input type="file" id="file-input" accept=".html" style="display:none">
+        </div>
+
+        <hr class="divider">
+
+        <!-- MANUAL URL INPUT -->
+        <div class="manual-section">
+          <h4>Or add URLs manually</h4>
+          <div class="url-input-wrap">
+            <input type="url" id="url-input" class="url-input" placeholder="https://example.com/product..." inputmode="url">
+            <button class="btn-add" onclick="addManualURL()">+</button>
+          </div>
+          <div class="url-list" id="url-list"></div>
+          <div id="manual-analyze-wrap" style="display:none; margin-top:12px;">
+            <button class="btn-go" onclick="startManualAnalysis()">
+              🔍 Analyze <span id="manual-count">0</span> URLs
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOW TO -->
+      <div class="card">
+        <div class="instructions">
+          <h4>📌 How to export from Chrome</h4>
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Open Chrome on PC → press <strong>Ctrl+Shift+O</strong> to open Bookmark Manager</div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Tap the <strong>⋮ menu</strong> in the top-right → choose <strong>"Export bookmarks"</strong></div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Send the <strong>.html file</strong> to your phone (WhatsApp, Drive, email)</div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-text">Come back here, tap <strong>Choose Bookmarks File</strong>, pick that file</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOLDER PICKER (hidden until file loaded) -->
+      <div class="card" id="folder-card" style="display:none">
+        <div class="folder-card">
+          <h4>Pick a folder to analyze</h4>
+          <div class="sub" id="folder-sub">Select the folder containing your AdSpy URLs</div>
+          <div class="folder-scroll" id="folder-scroll"></div>
+          <button class="btn-go" id="btn-go" disabled onclick="startFolderAnalysis()">
+            🔍 Analyze Selected Folder
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE: PROGRESS ── -->
+  <div id="page-progress">
+    <div class="progress-wrap">
+      <div class="progress-header">
+        <h2>Analyzing products...</h2>
+        <p>Claude is reading each product page</p>
+      </div>
+      <div class="card progress-card">
+        <div class="prog-meta">
+          <span>Progress</span>
+          <span class="count" id="prog-count">0 / 0</span>
+        </div>
+        <div class="track"><div class="fill" id="prog-fill"></div></div>
+        <div class="log-box" id="log-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE: GALLERY ── -->
+  <div id="page-gallery">
+    <div class="gallery-header">
+      <div class="gallery-title">
+        Gallery
+        <span class="ct" id="gal-sub">0 products</span>
+      </div>
+      <button class="btn-reset" onclick="resetApp()">↩ New</button>
+    </div>
+    <div class="filter-strip" id="filter-strip">
+      <div class="chip active" data-f="all" onclick="applyFilter(this)">All</div>
+      <div class="chip" data-f="priced" onclick="applyFilter(this)">Has Price 💰</div>
+      <div class="chip" data-f="fashion" onclick="applyFilter(this)">Fashion 👗</div>
+      <div class="chip" data-f="beauty" onclick="applyFilter(this)">Beauty 💄</div>
+      <div class="chip" data-f="tech" onclick="applyFilter(this)">Tech 📱</div>
+      <div class="chip" data-f="home" onclick="applyFilter(this)">Home 🏠</div>
+      <div class="chip" data-f="fitness" onclick="applyFilter(this)">Fitness 💪</div>
+      <div class="chip" data-f="other" onclick="applyFilter(this)">Other</div>
+    </div>
+    <div class="grid" id="product-grid"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM SHEET -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="handleSheetTap(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div id="sheet-img-wrap"></div>
+    <div class="sheet-body">
+      <div class="sheet-domain" id="sh-domain"></div>
+      <div class="sheet-title" id="sh-title"></div>
+      <div class="sheet-tags" id="sh-tags"></div>
+      <p class="sheet-desc" id="sh-desc"></p>
+      <div class="sheet-url" id="sh-url"></div>
+      <a class="btn-visit" id="sh-link" href="#" target="_blank" rel="noopener">
+        🛒 Visit Product Page ↗
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let allProducts = [];
+let manualURLs = [];
+let selectedFolder = null;
+let bookmarkFolders = {};
+let deferredPrompt = null;
+
+// ─── PWA INSTALL ─────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+
+document.getElementById('install-btn').onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('install-banner').style.display = 'none';
+};
+
+document.getElementById('install-dismiss').onclick = () => {
+  document.getElementById('install-banner').style.display = 'none';
+};
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').style.display = 'none';
+});
+
+// ─── FILE INPUT ───────────────────────────────────────────
+document.getElementById('file-input').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f) parseBookmarkFile(f);
+});
+
+function parseBookmarkFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const doc = new DOMParser().parseFromString(e.target.result, 'text/html');
+    bookmarkFolders = {};
+    doc.querySelectorAll('h3').forEach(h3 => {
+      const name = h3.textContent.trim();
+      if (!name) return;
+      const dl = h3.nextElementSibling;
+      if (!dl) return;
+      const links = Array.from(dl.querySelectorAll('a[href]')).map(a => ({
+        url: a.href, title: a.textContent.trim() || a.href
+      }));
+      if (links.length) bookmarkFolders[name] = links;
+    });
+
+    if (!Object.keys(bookmarkFolders).length) {
+      alert('No bookmark folders found. Make sure you exported the correct Chrome bookmarks HTML file.');
+      return;
+    }
+
+    renderFolders();
+  };
+  reader.readAsText(file);
+}
+
+function renderFolders() {
+  const scroll = document.getElementById('folder-scroll');
+  scroll.innerHTML = '';
+  document.getElementById('folder-sub').textContent = `${Object.keys(bookmarkFolders).length} folders found — select one`;
+
+  Object.entries(bookmarkFolders).forEach(([name, links]) => {
+    const row = document.createElement('div');
+    row.className = 'folder-row';
+    row.innerHTML = `
+      <div class="folder-emoji">📁</div>
+      <div class="folder-info">
+        <div class="folder-name">${name}</div>
+        <div class="folder-count">${links.length} link${links.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="folder-check">✓</div>
+    `;
+    row.onclick = () => {
+      document.querySelectorAll('.folder-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+      selectedFolder = name;
+      document.getElementById('btn-go').disabled = false;
+    };
+    scroll.appendChild(row);
+  });
+
+  document.getElementById('folder-card').style.display = 'block';
+  document.getElementById('folder-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── MANUAL URLS ─────────────────────────────────────────
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addManualURL();
+});
+
+function addManualURL() {
+  const input = document.getElementById('url-input');
+  const url = input.value.trim();
+  if (!url || manualURLs.includes(url)) { input.value = ''; return; }
+  manualURLs.push(url);
+  input.value = '';
+  renderURLList();
+}
+
+function removeURL(url) {
+  manualURLs = manualURLs.filter(u => u !== url);
+  renderURLList();
+}
+
+function renderURLList() {
+  const list = document.getElementById('url-list');
+  const wrap = document.getElementById('manual-analyze-wrap');
+  document.getElementById('manual-count').textContent = manualURLs.length;
+  wrap.style.display = manualURLs.length ? 'block' : 'none';
+  list.innerHTML = manualURLs.map(url => {
+    const domain = (() => { try { return new URL(url).hostname.replace('www.',''); } catch { return url; } })();
+    return `<div class="url-chip">
+      <span class="url-text">🌐 ${domain}</span>
+      <button class="url-chip-remove" onclick="removeURL('${url.replace(/'/g,"\\'")}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ─── ANALYSIS ────────────────────────────────────────────
+function startFolderAnalysis() {
+  if (!selectedFolder) return;
+  const links = bookmarkFolders[selectedFolder];
+  beginAnalysis(links);
+}
+
+function startManualAnalysis() {
+  const links = manualURLs.map(url => ({ url, title: url }));
+  beginAnalysis(links);
+}
+
+function showPage(id) {
+  ['page-import','page-progress','page-gallery'].forEach(p => {
+    document.getElementById(p).style.display = p === id ? 'block' : 'none';
+  });
+}
+
+async function beginAnalysis(links) {
+  showPage('page-progress');
+  allProducts = [];
+
+  const logBox = document.getElementById('log-box');
+  const fill = document.getElementById('prog-fill');
+  const count = document.getElementById('prog-count');
+
+  for (let i = 0; i < links.length; i++) {
+    const { url, title } = links[i];
+    count.textContent = `${i + 1} / ${links.length}`;
+    fill.style.width = `${(i / links.length) * 100}%`;
+
+    const logEl = document.createElement('div');
+    logEl.className = 'log-item';
+    logEl.innerHTML = `<div class="log-dot run"></div><span>${title.slice(0,55)}…</span>`;
+    logBox.appendChild(logEl);
+    logBox.scrollTop = logBox.scrollHeight;
+
+    try {
+      const p = await analyzeURL(url, title);
+      allProducts.push(p);
+      logEl.querySelector('.log-dot').className = 'log-dot ok';
+      logEl.querySelector('span').textContent = '✓ ' + (p.title || title).slice(0, 55);
+    } catch(err) {
+      allProducts.push({ url, title, error: true });
+      logEl.querySelector('.log-dot').className = 'log-dot err';
+      logEl.querySelector('span').textContent = '✗ ' + title.slice(0, 55);
+    }
+  }
+
+  fill.style.width = '100%';
+  await new Promise(r => setTimeout(r, 600));
+  renderGallery();
+}
+
+async function analyzeURL(url, fallback) {
+  const prompt = `Analyze this product URL and return ONLY a JSON object, no markdown, no explanation:
+{
+  "title": "short product name",
+  "description": "2-3 sentence description of what this is and its appeal",
+  "price": "price string like $29.99 or null",
+  "category": "one of: fashion, beauty, tech, home, fitness, food, pets, hobby, other",
+  "image": "best guess product image URL or null",
+  "emoji": "one relevant emoji"
+}
+URL: ${url}
+Bookmark title: ${fallback}
+Make smart inferences even if page is inaccessible. Always return valid JSON.`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const data = await res.json();
+  const text = data.content.map(b => b.text || '').join('');
+  const clean = text.replace(/```json|```/g, '').trim();
+  try {
+    return { ...JSON.parse(clean), url, error: false };
+  } catch {
+    return { title: fallback, description: 'Product from your AdSpy collection.', price: null, category: 'other', emoji: '🛍️', url, error: false };
+  }
+}
+
+// ─── GALLERY ─────────────────────────────────────────────
+function renderGallery() {
+  document.getElementById('nav-count').style.display = 'flex';
+  document.getElementById('nav-n').textContent = allProducts.length;
+  showPage('page-gallery');
+  renderGrid(allProducts);
+}
+
+function renderGrid(products) {
+  const grid = document.getElementById('product-grid');
+  document.getElementById('gal-sub').textContent = `${products.length} product${products.length !== 1 ? 's' : ''}`;
+  grid.innerHTML = '';
+
+  if (!products.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🔍</div><h3>Nothing here</h3><p>Try a different filter</p></div>`;
+    return;
+  }
+
+  products.forEach((p, i) => {
+    const domain = (() => { try { return new URL(p.url).hostname.replace('www.',''); } catch { return ''; } })();
+    const card = document.createElement('div');
+    card.className = 'pcard';
+    card.style.animationDelay = `${Math.min(i * 0.05, 0.5)}s`;
+    card.innerHTML = `
+      <div class="pcard-img">
+        ${p.image ? `<img src="${p.image}" alt="" onerror="this.style.display='none'; this.parentElement.querySelector('.pcard-fallback').style.display='flex'">` : ''}
+        <div class="pcard-fallback" style="display:${p.image ? 'none' : 'flex'}">${p.emoji || '🛍️'}</div>
+        ${p.category ? `<div class="pcard-cat">${p.category}</div>` : ''}
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-domain">${domain}</div>
+        <div class="pcard-title">${p.title || p.url}</div>
+        <div class="pcard-price">${p.price || ''}</div>
+      </div>
+    `;
+    card.onclick = () => openSheet(p);
+    grid.appendChild(card);
+  });
+}
+
+function applyFilter(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const f = el.dataset.f;
+  let filtered = allProducts;
+  if (f === 'priced') filtered = allProducts.filter(p => p.price);
+  else if (f !== 'all') filtered = allProducts.filter(p => p.category === f);
+  renderGrid(filtered);
+}
+
+// ─── BOTTOM SHEET ─────────────────────────────────────────
+function openSheet(p) {
+  const domain = (() => { try { return new URL(p.url).hostname.replace('www.',''); } catch { return p.url; } })();
+  document.getElementById('sh-domain').textContent = domain;
+  document.getElementById('sh-title').textContent = p.title || p.url;
+  document.getElementById('sh-url').textContent = p.url;
+  document.getElementById('sh-link').href = p.url;
+  document.getElementById('sh-desc').textContent = p.description || '';
+
+  // Image
+  const imgWrap = document.getElementById('sheet-img-wrap');
+  if (p.image) {
+    imgWrap.innerHTML = `<div class="sheet-img"><img src="${p.image}" alt="" onerror="this.parentElement.innerHTML='<div class=sheet-img-fallback>${p.emoji||'🛍️'}</div>'"></div>`;
+  } else {
+    imgWrap.innerHTML = `<div class="sheet-img-fallback">${p.emoji || '🛍️'}</div>`;
+  }
+
+  // Tags
+  const tags = document.getElementById('sh-tags');
+  tags.innerHTML = '';
+  if (p.price) tags.innerHTML += `<div class="tag price">💰 ${p.price}</div>`;
+  if (p.category) tags.innerHTML += `<div class="tag">${(p.emoji||'')} ${p.category}</div>`;
+  tags.innerHTML += `<div class="tag">🌐 ${domain}</div>`;
+
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function handleSheetTap(e) {
+  if (e.target === document.getElementById('sheet-overlay')) closeSheet();
+}
+
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Touch swipe down to dismiss
+let touchStartY = 0;
+document.getElementById('sheet').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+document.getElementById('sheet').addEventListener('touchend', e => {
+  if (e.changedTouches[0].clientY - touchStartY > 80) closeSheet();
+}, { passive: true });
+
+// ─── RESET ────────────────────────────────────────────────
+function resetApp() {
+  allProducts = []; manualURLs = []; selectedFolder = null; bookmarkFolders = {};
+  document.getElementById('file-input').value = '';
+  document.getElementById('url-list').innerHTML = '';
+  document.getElementById('manual-analyze-wrap').style.display = 'none';
+  document.getElementById('folder-card').style.display = 'none';
+  document.getElementById('folder-scroll').innerHTML = '';
+  document.getElementById('product-grid').innerHTML = '';
+  document.getElementById('log-box').innerHTML = '';
+  document.getElementById('prog-fill').style.width = '0%';
+  document.getElementById('nav-count').style.display = 'none';
+  showPage('page-import');
+}
+
+// ─── SERVICE WORKER (offline support) ────────────────────
+if ('serviceWorker' in navigator) {
+  const sw = `
+    const CACHE = 'adspy-v1';
+    const ASSETS = ['/'];
+    self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll([]))));
+    self.addEventListener('fetch', e => {
+      if (e.request.url.includes('api.anthropic.com') || e.request.url.includes('fonts.googleapis.com')) return;
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([sw], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+}
+</script>
+</body>
+</html>
